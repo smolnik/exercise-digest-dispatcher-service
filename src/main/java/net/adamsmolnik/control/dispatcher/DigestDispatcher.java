@@ -86,65 +86,12 @@ public class DigestDispatcher {
 
     public DigestResponse execute(DigestRequest digestRequest) {
         long size = fetchObjectSize(digestRequest);
-
         String basicServiceUrl = buildServiceUrl(basicServerDomain);
-        if (size < sizeThreshold) {
-            return sender.send(basicServiceUrl, digestRequest, responseClass);
-        }
-
-        RunInstancesRequest request = new RunInstancesRequest()
-                .withImageId("ami-7623811e")
-                .withInstanceType("t2.small")
-                .withMinCount(1)
-                .withMaxCount(1)
-                .withKeyName("adamsmolnik-net-key-pair")
-                .withSecurityGroupIds("sg-7be68f1e")
-                .withSecurityGroups("adamsmolnik.com")
-                .withIamInstanceProfile(
-                        new IamInstanceProfileSpecification()
-                                .withArn("arn:aws:iam::542175458111:instance-profile/glassfish4-1-java8-InstanceProfile-1WX67989SDNGL"));
-
-        AtomicReference<String> instanceId = new AtomicReference<>();
-        try {
-            RunInstancesResult result = ec2.runInstances(request);
-            Instance instance = result.getReservation().getInstances().get(0);
-            instanceId.set(instance.getInstanceId());
-            List<Tag> tags = new ArrayList<>();
-            tags.add(new Tag().withKey("Name").withValue(
-                    "time-limited server instance " + " (spawn by  " + Util.getLocalHost() + ") for " + serviceName));
-            tags.add(new Tag().withKey("owner").withValue(conf.getGlobalValue("bucketName")));
-            CreateTagsRequest ctr = new CreateTagsRequest();
-            ctr.setTags(tags);
-            ctr.withResources().withResources(instanceId.get());
-            ec2.createTags(ctr);
-
-            scheduler.scheduleAndWaitFor(
-                    () -> {
-                        List<InstanceStatus> instanceStatuses = ec2.describeInstanceStatus(
-                                new DescribeInstanceStatusRequest().withInstanceIds(instanceId.get())).getInstanceStatuses();
-                        if (!instanceStatuses.isEmpty()) {
-                            InstanceStatus is = instanceStatuses.get(0);
-                            return "ok".equals(is.getInstanceStatus().getStatus()) && "ok".equals(is.getSystemStatus().getStatus()) ? Optional.of(is)
-                                    : Optional.empty();
-                        }
-                        return Optional.empty();
-                    }, 15, 600, TimeUnit.SECONDS);
-            Instance fetchInstanceDetails = ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId.get())).getReservations()
-                    .get(0).getInstances().get(0);
-            String publicIpAddress = fetchInstanceDetails.getPublicIpAddress();
-            sendHealthCheckUntilGetsHealthy(buildServiceContextUrl(publicIpAddress));
-            DigestResponse response = sender.trySending(buildServiceUrl(publicIpAddress), digestRequest, responseClass, new SendingParams()
-                    .withNumberOfAttempts(3).withAttemptIntervalSecs(5).withLogExceptiomAttemptConsumer(log::err));
-            return response;
-        } catch (Exception e) {
-            log.err(e);
-            throw new ServiceException(e);
-        } finally {
-            String iid = instanceId.get();
-            if (iid != null) {
-                scheduler.schedule(() -> ec2.terminateInstances(new TerminateInstancesRequest().withInstanceIds(iid)), 15, TimeUnit.MINUTES);
-            }
-        }
+        return sender.send(basicServiceUrl, digestRequest, responseClass);
+        /*
+         * Complete code here
+         * 
+         */
     }
 
     private long fetchObjectSize(DigestRequest digestRequest) {
