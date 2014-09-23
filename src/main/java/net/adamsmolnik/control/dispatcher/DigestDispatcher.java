@@ -94,6 +94,12 @@ public class DigestDispatcher {
          */
     }
 
+    private void scheduleShutdown(String iid) {
+        if (iid != null) {
+            scheduler.schedule(() -> ec2.terminateInstances(new TerminateInstancesRequest().withInstanceIds(iid)), 15, TimeUnit.MINUTES);
+        }
+    }
+
     private long fetchObjectSize(DigestRequest digestRequest) {
         Client client = ClientBuilder.newClient();
         String fetchSizeUrl;
