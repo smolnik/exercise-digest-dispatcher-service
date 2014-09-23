@@ -25,6 +25,7 @@ import net.adamsmolnik.model.digest.DigestResponse;
 import net.adamsmolnik.sender.Sender;
 import net.adamsmolnik.sender.SendingParams;
 import net.adamsmolnik.util.Configuration;
+import net.adamsmolnik.util.LocalServiceUrlCache;
 import net.adamsmolnik.util.Log;
 import net.adamsmolnik.util.Scheduler;
 import net.adamsmolnik.util.Util;
@@ -47,6 +48,9 @@ import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
  */
 @Dependent
 public class DigestDispatcher {
+
+    @Inject
+    private LocalServiceUrlCache cache;
 
     @Inject
     private Log log;
@@ -85,19 +89,11 @@ public class DigestDispatcher {
     }
 
     public DigestResponse execute(DigestRequest digestRequest) {
-        long size = fetchObjectSize(digestRequest);
-        String basicServiceUrl = buildServiceUrl(basicServerDomain);
-        return sender.send(basicServiceUrl, digestRequest, responseClass);
         /*
-         * Complete code here
+         * Complete code here and produce meaningful DigestResponse in lieu of placeholder as below
          * 
          */
-    }
-
-    private void scheduleShutdown(String iid) {
-        if (iid != null) {
-            scheduler.schedule(() -> ec2.terminateInstances(new TerminateInstancesRequest().withInstanceIds(iid)), 15, TimeUnit.MINUTES);
-        }
+        return new DigestResponse();
     }
 
     private long fetchObjectSize(DigestRequest digestRequest) {
